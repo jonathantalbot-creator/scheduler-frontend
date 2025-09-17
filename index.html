@@ -2,71 +2,235 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Scheduler App</title>
+  <title>Studio Scheduler</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 720px; }
-    h1 { margin-bottom: 8px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 12px 0; }
-    label { display:block; font-weight:600; margin-bottom:6px; }
-    textarea { width: 100%; min-height: 100px; padding:10px; }
-    button { padding:10px 14px; border-radius: 8px; border: 1px solid #888; cursor: pointer; }
-    pre { background:#fafafa; border:1px solid #eee; padding:12px; border-radius:8px; overflow:auto; }
-    .row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+    :root{
+      --bg:#0f0f0f; --panel:#151515; --panel2:#111; --border:#232323;
+      --text:#eaeaea; --muted:#bdbdbd; --accent:#22c55e; --accent-2:#60a5fa; --warn:#f59e0b; --danger:#ef4444;
+    }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{ margin:0; background:var(--bg); color:var(--text); font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    .layout{ display:grid; grid-template-columns: 260px 1fr; height:100% }
+    /* Sidebar */
+    .sidebar{ background:var(--panel2); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:16px; gap:12px }
+    .brand{ font-weight:800; letter-spacing:.2px; display:flex; align-items:center; gap:8px }
+    .dot{ width:10px; height:10px; background:var(--accent); border-radius:999px; display:inline-block }
+    .sec-title{ color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-top:6px }
+    .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:10px; cursor:pointer }
+    .btn.primary{ background:var(--accent); border-color:transparent; color:#001b07; font-weight:700 }
+    .filter-chip{ display:inline-flex; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#1d1d1d; color:var(--muted); margin:4px 6px 0 0; cursor:pointer }
+    .filter-chip.active{ color:#0a2a17; background:#2fe27c; border-color:transparent; font-weight:700 }
+    .list{ border:1px solid var(--border); border-radius:12px; overflow:auto; background:var(--panel); max-height:40vh }
+    .list-item{ padding:10px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center }
+    .badge{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted) }
+    /* Main */
+    .main{ display:flex; flex-direction:column; height:100% }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--panel2) }
+    .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+    .input{ background:#0e0e0e; border:1px solid var(--border); color:var(--text); border-radius:10px; padding:8px 10px }
+    .calendar{ flex:1; overflow:auto; }
+    .grid{ min-width:980px; display:grid; grid-template-columns: 120px repeat(7, 1fr); }
+    .grid .col-head{ position:sticky; top:0; background:#0c0c0c; border-bottom:1px solid var(--border); z-index:2 }
+    .slot, .col-head{ border-right:1px solid var(--border) }
+    .time-col{ background:#0c0c0c; border-right:1px solid var(--border) }
+    .time{ height:56px; border-bottom:1px solid #1d1d1d; color:#8b8b8b; font-size:12px; display:flex; align-items:flex-start; padding:6px }
+    .day-head{ padding:10px; border-left:1px solid var(--border) }
+    .cell{ height:56px; border-bottom:1px solid #1d1d1d; position:relative }
+    .shift{ position:absolute; left:6px; right:6px; top:6px; min-height:40px; background:#1e1e1e; border:1px solid #2a2a2a; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px }
+    .shift .title{ font-weight:700 }
+    .shift .meta{ font-size:12px; color:var(--muted) }
+    .pill{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--border) }
+    .pill.fd{ background:#163a26; border-color:#1f5938; color:#a8ffcb }
+    .pill.inst{ background:#0c2235; border-color:#153659; color:#bfe1ff }
+    .status-pub{ background:#0f2a12; border:1px solid #1f5f2a; color:#9affb9 }
+    .status-draft{ background:#2a1f0f; border:1px solid #5f3a1f; color:#ffd6a1 }
+    .status-open{ background:#2a1717; border:1px solid #5f2a2a; color:#ffc1c1 }
+    .footer{ padding:10px 16px; border-top:1px solid var(--border); background:var(--panel2); display:flex; justify-content:space-between; align-items:center }
+    @media (max-width: 900px){ .layout{ grid-template-columns: 1fr } .sidebar{ display:none } }
   </style>
 </head>
 <body>
-  <h1>Scheduler App</h1>
-  <p>This page calls your backend on Render to generate text via Google AI.</p>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span> Studio <span style="color:#7bf59f">Scheduler</span></div>
+      <button class="btn primary" id="newShiftBtn">+ New Shift</button>
 
-  <div class="card">
-    <label for="prompt">Prompt</label>
-    <textarea id="prompt" placeholder="e.g., Write a welcome message for my scheduling app."></textarea>
-    <div class="row">
-      <button id="run">Generate</button>
-      <span id="status"></span>
-    </div>
-  </div>
+      <div class="sec-title">Roles</div>
+      <div id="roleFilters" class="row" style="gap:6px">
+        <!-- toggled via JS -->
+      </div>
 
-  <div class="card">
-    <h3>Result</h3>
-    <pre id="output">(nothing yet)</pre>
+      <div class="sec-title">Employees</div>
+      <div class="list" id="employeesList"></div>
+
+      <div class="sec-title">Actions</div>
+      <button class="btn" id="publishBtn">Publish Week</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="row">
+          <button class="btn" id="prevWeek">←</button>
+          <div id="weekLabel" style="font-weight:800"></div>
+          <button class="btn" id="nextWeek">→</button>
+        </div>
+        <div class="row">
+          <input id="studioSelect" class="input" type="text" value="Main Studio" />
+          <select id="viewSelect" class="input">
+            <option value="week" selected>Week</option>
+            <option value="day">Day</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="calendar">
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="footer">
+        <div>Draft</div>
+        <div class="row">
+          <span class="pill fd">Front Desk</span>
+          <span class="pill inst">Instructor</span>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>
-    // ⬇️ your backend url
-    const BACKEND = "https://scheduler-backend-2.onrender.com";
+    // === Config ===
+    // Later we’ll load real roles/employees/shifts via your backend.
+    const ROLES = [
+      { id:'front_desk', name:'Front Desk', pill:'fd' },
+      { id:'instructor', name:'Instructor', pill:'inst' },
+    ];
+    const EMPLOYEES = [
+      { id:'alex', name:'Alex Example', role:'Front Desk' },
+      { id:'taylor', name:'Taylor Blue', role:'Instructor' },
+    ];
+    const HOURS = Array.from({length:14},(_,i)=>i+6); // 6:00 -> 19:00
 
-    const btn = document.getElementById('run');
-    const out = document.getElementById('output');
-    const statusEl = document.getElementById('status');
+    // Date helpers
+    function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x }
+    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
+    function fmt(d){ return d.toLocaleDateString(undefined,{ month:'short', day:'numeric' }) }
+    function hhmm(h){ const m = String(h).padStart(2,'0') + ':00'; return m }
 
-    btn.addEventListener('click', async () => {
-      const prompt = document.getElementById('prompt').value.trim();
-      if (!prompt) {
-        out.textContent = '(please enter a prompt)';
-        return;
+    // State
+    let weekStart = startOfWeek(new Date());
+    let activeRoles = new Set(ROLES.map(r=>r.id)); // all selected
+
+    // UI elements
+    const weekLabel = document.getElementById('weekLabel');
+    const grid = document.getElementById('grid');
+    const roleFilters = document.getElementById('roleFilters');
+    const employeesList = document.getElementById('employeesList');
+
+    // Build role filters
+    function renderRoleFilters(){
+      roleFilters.innerHTML = '';
+      ROLES.forEach(r=>{
+        const chip = document.createElement('div');
+        chip.className = 'filter-chip active';
+        chip.textContent = r.name;
+        chip.onclick = () => {
+          if(activeRoles.has(r.id)){ activeRoles.delete(r.id); chip.classList.remove('active') }
+          else { activeRoles.add(r.id); chip.classList.add('active') }
+          drawGrid();
+        };
+        roleFilters.appendChild(chip);
+      });
+    }
+
+    // Build employees list
+    function renderEmployees(){
+      employeesList.innerHTML = '';
+      EMPLOYEES.forEach(emp=>{
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.innerHTML = `<span>${emp.name}</span><span class="badge">${emp.role}</span>`;
+        employeesList.appendChild(row);
+      });
+    }
+
+    // Build calendar grid
+    function drawGrid(){
+      grid.innerHTML = '';
+      // Header row
+      const headTime = document.createElement('div');
+      headTime.className = 'col-head time-col';
+      headTime.style.height = '46px';
+      grid.appendChild(headTime);
+      for(let d=0; d<7; d++){
+        const day = document.createElement('div');
+        day.className = 'col-head day-head';
+        const date = addDays(weekStart, d);
+        day.innerHTML = `<div style="font-weight:800">${date.toLocaleDateString(undefined,{ weekday:'short'})}</div>
+                         <div style="color:#aaa">${fmt(date)}</div>`;
+        grid.appendChild(day);
       }
-      statusEl.textContent = 'Working...';
-      out.textContent = '';
-      try {
-        const res = await fetch(`${BACKEND}/api/ai`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          out.textContent = 'Error: ' + (data?.error || res.statusText);
-        } else {
-          out.textContent = data.output || '(no output)';
+      // Time rows
+      HOURS.forEach(h=>{
+        const timeCol = document.createElement('div');
+        timeCol.className = 'time-col';
+        const t = document.createElement('div');
+        t.className = 'time';
+        t.textContent = `${String(h).padStart(2,'0')}:00`;
+        timeCol.appendChild(t);
+        grid.appendChild(timeCol);
+        for(let d=0; d<7; d++){
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          grid.appendChild(cell);
         }
-      } catch (e) {
-        out.textContent = 'Network error: ' + e.message;
-      } finally {
-        statusEl.textContent = '';
-      }
-    });
+      });
+
+      // Demo shifts (static) — we'll replace with data from your DB in the next step
+      const demoShifts = [
+        { role:'front_desk', title:'Front Desk', day:1, start:8, end:12, status:'draft', employee:'Alex Example' },
+        { role:'instructor', title:'Spin Class', day:1, start:17, end:19, status:'open', employee:null },
+        { role:'front_desk', title:'Front Desk', day:3, start:9, end:13, status:'published', employee:'Taylor Blue' },
+      ];
+      demoShifts.filter(s=>activeRoles.has(s.role)).forEach(s=>{
+        const rowIndex = HOURS.indexOf(s.start);
+        if(rowIndex === -1) return;
+        const colIndex = s.day; // 0=Mon, 1=Tue...
+        // Compute grid position: 1 header column + 7 day columns; each hour row includes time col
+        const firstCellIndex = (1 /* header row */) * 8
+          + 1 /* time col for first hour row */ + colIndex + (rowIndex * 8);
+        const cell = grid.children[firstCellIndex + 1]; // +1 because header time cell is first
+        const shift = document.createElement('div');
+        shift.className = 'shift';
+        const statusClass = s.status==='published' ? 'status-pub' : s.status==='open' ? 'status-open' : 'status-draft';
+        shift.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <span class="title">${s.title}</span>
+            <span class="pill ${s.role==='front_desk'?'fd':'inst'}">${s.role==='front_desk'?'Front Desk':'Instructor'}</span>
+          </div>
+          <div class="meta ${statusClass}">
+            ${String(s.start).padStart(2,'0')}:00–${String(s.end).padStart(2,'0')}:00
+            ${s.employee ? ' • ' + s.employee : ' • Open'}
+          </div>`;
+        cell.appendChild(shift);
+      });
+    }
+
+    // Week navigation
+    document.getElementById('prevWeek').onclick = ()=>{ weekStart.setDate(weekStart.getDate()-7); refresh() }
+    document.getElementById('nextWeek').onclick = ()=>{ weekStart.setDate(weekStart.getDate()+7); refresh() }
+
+    function refresh(){
+      const end = addDays(weekStart, 6);
+      weekLabel.textContent = `${fmt(weekStart)} – ${fmt(end)}`;
+      renderRoleFilters();
+      renderEmployees();
+      drawGrid();
+    }
+
+    // init
+    refresh();
   </script>
 </body>
 </html>
