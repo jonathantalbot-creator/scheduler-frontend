@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Scheduler App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 720px; }
+    h1 { margin-bottom: 8px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 12px 0; }
+    label { display:block; font-weight:600; margin-bottom:6px; }
+    textarea { width: 100%; min-height: 100px; padding:10px; }
+    button { padding:10px 14px; border-radius: 8px; border: 1px solid #888; cursor: pointer; }
+    pre { background:#fafafa; border:1px solid #eee; padding:12px; border-radius:8px; overflow:auto; }
+    .row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <h1>Scheduler App</h1>
+  <p>This page calls your backend on Render to generate text via Google AI.</p>
+
+  <div class="card">
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" placeholder="e.g., Write a welcome message for my scheduling app."></textarea>
+    <div class="row">
+      <button id="run">Generate</button>
+      <span id="status"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Result</h3>
+    <pre id="output">(nothing yet)</pre>
+  </div>
+
+  <script>
+    // ⬇️ your backend url
+    const BACKEND = "https://scheduler-backend-2.onrender.com";
+
+    const btn = document.getElementById('run');
+    const out = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+
+    btn.addEventListener('click', async () => {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) {
+        out.textContent = '(please enter a prompt)';
+        return;
+      }
+      statusEl.textContent = 'Working...';
+      out.textContent = '';
+      try {
+        const res = await fetch(`${BACKEND}/api/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          out.textContent = 'Error: ' + (data?.error || res.statusText);
+        } else {
+          out.textContent = data.output || '(no output)';
+        }
+      } catch (e) {
+        out.textContent = 'Network error: ' + e.message;
+      } finally {
+        statusEl.textContent = '';
+      }
+    });
+  </script>
+</body>
+</html>
